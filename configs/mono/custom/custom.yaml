@@ -1,4 +1,4 @@
-inherit_from: "configs/mono/custom/base_config.yaml"
+inherit_from: "MonoGS/configs/mono/custom/base_config.yaml"
 
 Dataset:
   dataset_path: "MonoGSDATA/esbjerg/"
