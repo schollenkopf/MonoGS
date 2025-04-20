@@ -30,6 +30,6 @@ pip install MonoGS/submodules/diff-gaussian-rasterization
 pip install MonoGS/submodules/simple-knn
 
 
-python slam.py --config configs/mono/custom/custom.yaml
+python MonoGS/slam.py --config MonoGS/configs/mono/custom/custom.yaml
 
 
