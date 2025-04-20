@@ -45,6 +45,10 @@ class ReplicaParser:
         self.frames = frames
 
 
+
+    
+
+
 class TUMParser:
     def __init__(self, input_folder):
         self.input_folder = input_folder
@@ -404,6 +408,82 @@ class TUMDataset(MonocularDataset):
         self.poses = parser.poses
 
 
+class CustomDataset(MonocularDataset):
+    def __init__(self, args, path, config):
+        super().__init__(args, path, config)
+        dataset_path = config["Dataset"]["dataset_path"]
+        self.input_folder = dataset_path
+        self.color_paths = sorted(glob.glob(f"{self.input_folder}/images/frame_*.jpg"))
+        self.n_img = len(self.color_paths)
+        calibration = config["Dataset"]["Calibration"]
+        # Camera prameters
+        self.fx = calibration["fx"]
+        self.fy = calibration["fy"]
+        self.cx = calibration["cx"]
+        self.cy = calibration["cy"]
+        self.width = calibration["width"]
+        self.height = calibration["height"]
+        self.fovx = focal2fov(self.fx, self.width)
+        self.fovy = focal2fov(self.fy, self.height)
+        self.K = np.array(
+            [[self.fx, 0.0, self.cx], [0.0, self.fy, self.cy], [0.0, 0.0, 1.0]]
+        )
+        # distortion parameters
+        self.disorted = calibration["distorted"]
+        self.dist_coeffs = np.array(
+            [
+                calibration["k1"],
+                calibration["k2"],
+                calibration["p1"],
+                calibration["p2"],
+                calibration["k3"],
+            ]
+        )
+        self.map1x, self.map1y = cv2.initUndistortRectifyMap(
+            self.K,
+            self.dist_coeffs,
+            np.eye(3),
+            self.K,
+            (self.width, self.height),
+            cv2.CV_32FC1,
+        )
+        # depth parameters
+        self.has_depth = True if "depth_scale" in calibration.keys() else False
+        self.depth_scale = calibration["depth_scale"] if self.has_depth else None
+
+        # Default scene scale
+        nerf_normalization_radius = 5
+        self.scene_info = {
+            "nerf_normalization": {
+                "radius": nerf_normalization_radius,
+                "translation": np.zeros(3),
+            },
+        }
+
+    def __getitem__(self, idx):
+        color_path = self.color_paths[idx]
+
+        image = np.array(Image.open(color_path))
+        depth = None
+
+        if self.disorted:
+            image = cv2.remap(image, self.map1x, self.map1y, cv2.INTER_LINEAR)
+
+        if self.has_depth:
+            depth_path = self.depth_paths[idx]
+            depth = np.array(Image.open(depth_path)) / self.depth_scale
+
+        image = (
+            torch.from_numpy(image / 255.0)
+            .clamp(0.0, 1.0)
+            .permute(2, 0, 1)
+            .to(device=self.device, dtype=self.dtype)
+        )
+        pose = pose = torch.eye(4, device=self.device, dtype=self.dtype)
+        return image, depth, pose
+    
+
+
 class ReplicaDataset(MonocularDataset):
     def __init__(self, args, path, config):
         super().__init__(args, path, config)
@@ -528,5 +608,7 @@ def load_dataset(args, path, config):
         return EurocDataset(args, path, config)
     elif config["Dataset"]["type"] == "realsense":
         return RealsenseDataset(args, path, config)
+    elif config["Dataset"]["type"] == "custom":
+        return CustomDataset(args, path, config)
     else:
         raise ValueError("Unknown dataset type")

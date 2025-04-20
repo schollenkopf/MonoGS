@@ -1,0 +1,19 @@
+inherit_from: "configs/mono/custom/base_config.yaml"
+
+Dataset:
+  dataset_path: "MonoGSDATA/esbjerg/"
+  Calibration:
+    fx: 509.65715
+    fy: 509.57802
+    cx: 478.0026
+    cy: 293.94665
+    k1: 0.04953
+    k2: -0.11232
+    p1: 0.00115
+    p2: 0.00062
+    k3: 0.05541
+    width: 960
+    height: 520
+    depth_scale: 5000.0
+    distorted: True
+
