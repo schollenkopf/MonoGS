@@ -4,14 +4,14 @@
 #BSUB -J gpuCorePython 
 #BSUB -q gpua100
 ### request the number of GPUs
-#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -gpu "num=4:mode=exclusive_process"
 ### request the number of CPU cores (at least 4x the number of GPUs)
-#BSUB -n 4 
+#BSUB -n 16 
 ### we want to have this on a single node
 #BSUB -R "span[hosts=1]"
 ### we need to request CPU memory, too (note: this is per CPU core)
 #BSUB -R "rusage[mem=8GB]"
-#BSUB -R "select[gpu40gb]"
+
 #BSUB -B
 # -- Notify me by email when execution ends   --
 #BSUB -N
@@ -22,6 +22,7 @@
 #BSUB -e Output_%J.err
 # -- estimated wall clock time (execution time): hh:mm -- 
 #BSUB -W 24:00 
+
 
 
 module load colmap
